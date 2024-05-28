@@ -1,6 +1,8 @@
 import * as net from 'net';
 
 const server = net.createServer((socket: { write: (arg0: string) => void; on: (arg0: string, arg1: (data: any) => void) => void; end: () => void; }) => {
+    console.log('New connection established');
+
     socket.on("data", (data: { toString: () => any; }) => {
         const req = data.toString()
         const [requestLine, ...headerLines] = req.split("\r\n");
@@ -12,6 +14,7 @@ const server = net.createServer((socket: { write: (arg0: string) => void; on: (a
             }
             return acc;
         },{} as Record<string,string>)
+
         let res;
         if(path === "/"){
             const body = "Welcome to root"
@@ -29,6 +32,14 @@ const server = net.createServer((socket: { write: (arg0: string) => void; on: (a
         socket.write(res);
         socket.end();
     })
+
+    socket.on('end', () => {
+        console.log('Connection closed');
+    });
+
+    socket.on('error', (err) => {
+        console.error('Socket error:', err);
+    });
 });
 
 // You can use print statements as follows for debugging, they'll be visible when running tests.
