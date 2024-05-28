@@ -1,6 +1,6 @@
 import * as net from 'net';
 import * as fs from 'fs';
-import { join } from 'path';
+import { join } from 'path'; // Import the join method explicitly
 
 const server = net.createServer((socket) => {
     console.log('New connection established');
@@ -11,20 +11,20 @@ const server = net.createServer((socket) => {
         const path = requestLine.split(" ")[1];
 
         if (path.startsWith("/files/")) {
-            const filePath = path.slice(7);
-            const directory = process.argv.slice(2).find(arg => arg.startsWith('--directory='));
-
-            if (!directory) {
+            const filePath = path.slice(7); // Extract the file path after "/files/"
+            const directoryIndex = process.argv.findIndex(arg => arg.startsWith('--directory='));
+            
+            if (directoryIndex === -1) {
                 console.error('No directory specified.');
                 const res = "HTTP/1.1 500 Internal Server Error\r\nContent-Type: text/plain\r\n\r\nNo directory specified.";
                 socket.write(res);
                 socket.end();
                 return;
             }
-            
-            const directoryPath = directory.split('=')[1];
-            const fullPath = join(directoryPath, filePath);
-            
+
+            const directoryPath = process.argv[directoryIndex].split('=')[1];
+            const fullPath = join(directoryPath, filePath); // Using the join method from path module
+
             fs.readFile(fullPath, (err, data) => {
                 if (err) {
                     console.error(`Error reading file ${filePath}:`, err);
