@@ -14,17 +14,17 @@ const server = net.createServer((socket) => {
             const filePath = path.slice(7);
             const directory = process.argv.slice(2).find(arg => arg.startsWith('--directory='));
 
-            if (!directory) {
-                console.error('No directory specified.');
-                const res = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nNo directory specified.";
-                socket.write(res);
-                socket.end();
-                return res;
-            }
-
+            // if (!directory) {
+            //     console.error('No directory specified.');
+            //     const res = "HTTP/1.1 500 Internal Server Error\r\nContent-Type: text/plain\r\n\r\nNo directory specified.";
+            //     socket.write(res);
+            //     socket.end();
+            //     return res;
+            // }
+            
             const directoryPath = directory.split('=')[1];
             const fullPath = join(directoryPath, filePath);
-
+            
             fs.readFile(fullPath, (err, data) => {
                 if (err) {
                     console.error(`Error reading file ${filePath}:`, err);
