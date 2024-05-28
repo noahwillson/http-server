@@ -7,7 +7,7 @@ const server = net.createServer((socket: { write: (arg0: string) => void; on: (a
         let res;
         if(path.startsWith("/echo/")){
             const echoStr = path.slice(6);
-            res = `HTTP/1.1 200 OK\r\n\Content-length: ${echoStr.length}\r\n\r\n${echoStr}`;
+            res = `HTTP/1.1 200 OK\r\n\Content-Type: text/plain\r\nContent-length: ${echoStr.length}\r\n\r\n${echoStr}`;
         }else {
             res = "HTTP/1.1 404 Not Found\r\n\r\n"
         }
