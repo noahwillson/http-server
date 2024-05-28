@@ -2,6 +2,7 @@ import * as net from 'net';
 
 const server = net.createServer((socket) => {
     socket.write("HTTP/1.1 200 OK\r\n\r\n");
+    socket.write("GET /index.html HTTP/1.1\r\nHost: localhost:4221\r\nUser-Agent: curl/7.64.1\r\nAccept: */*\r\n\r\n");
     socket.end();
 });
 
