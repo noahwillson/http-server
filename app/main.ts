@@ -4,7 +4,7 @@ const server = net.createServer((socket: { write: (arg0: string) => void; on: (a
     socket.on("data", (data: { toString: () => any; }) => {
         const req = data.toString()
         const path = req.split(" ")[1];
-        const res = path === "/" ? "HTTP/1.1 200 OK\r\n\r\n" : "HTTP/1.1 404 NOT_FOUND\r\n\r\n"
+        const res = path === "/" ? "HTTP/1.1 200 OK\r\n\r\n" : "HTTP/1.1 404 Not Found\r\n\r\n"
         socket.write(res);
         socket.end();
     })
