@@ -1,6 +1,6 @@
 import * as net from 'net';
 import * as fs from 'fs';
-import { join } from 'path'; // Import the join method explicitly
+import { join } from 'path';
 
 const server = net.createServer((socket) => {
     console.log('New connection established');
@@ -13,6 +13,14 @@ const server = net.createServer((socket) => {
         if (path.startsWith("/files/")) {
             const filePath = path.slice(7); // Extract the file path after "/files/"
             const directoryIndex = process.argv.findIndex(arg => arg.startsWith('--directory='));
+
+            if (directoryIndex === -1) {
+                console.error('No directory specified.');
+                const res = "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\nNo directory specified.";
+                socket.write(res);
+                socket.end();
+                return;
+            }
 
             const directoryPath = process.argv[directoryIndex].split('=')[1];
             const fullPath = join(directoryPath, filePath); // Using the join method from path module
@@ -48,10 +56,8 @@ const server = net.createServer((socket) => {
     });
 });
 
-// You can use print statements as follows for debugging, they'll be visible when running tests.
 console.log("Logs from your program will appear here!");
 
-// Uncomment this to pass the first stage
 server.listen(4221, 'localhost', () => {
     console.log('Server is running on port 4221');
 });
