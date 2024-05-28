@@ -1,6 +1,6 @@
 import * as net from 'net';
 import * as fs from 'fs';
-import { join } from 'path'; // Import the join method explicitly
+import { join } from 'path';
 
 const server = net.createServer((socket) => {
     console.log('New connection established');
@@ -11,7 +11,7 @@ const server = net.createServer((socket) => {
         const path = requestLine.split(" ")[1];
 
         if (path.startsWith("/files/")) {
-            const filePath = path.slice(7); // Extract the file path after "/files/"
+            const filePath = path.slice(7);
             const directory = process.argv.slice(2).find(arg => arg.startsWith('--directory='));
 
             if (!directory) {
@@ -23,7 +23,7 @@ const server = net.createServer((socket) => {
             }
 
             const directoryPath = directory.split('=')[1];
-            const fullPath = join(directoryPath, filePath); // Using the join method from path module
+            const fullPath = join(directoryPath, filePath);
 
             fs.readFile(fullPath, (err, data) => {
                 if (err) {
