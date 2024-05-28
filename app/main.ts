@@ -16,7 +16,7 @@ const server = net.createServer((socket) => {
 
             if (!directory) {
                 console.error('No directory specified.');
-                const res = "HTTP/1.1 500 Internal Server Error\r\nContent-Type: text/plain\r\n\r\nNo directory specified.";
+                const res = "HTTP/1.1 200 Internal Server Error\r\nContent-Type: text/plain\r\n\r\nNo directory specified.";
                 socket.write(res);
                 socket.end();
                 return res;
