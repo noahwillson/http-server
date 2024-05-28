@@ -1,8 +1,12 @@
 import * as net from 'net';
 
-const server = net.createServer((socket) => {
+const server = net.createServer((socket: { write: (arg0: string) => void; on: (arg0: string, arg1: (data: any) => void) => void; end: () => void; }) => {
     socket.write("HTTP/1.1 200 OK\r\n\r\n");
-    socket.write("GET /index.html HTTP/1.1\r\nHost: localhost:4221\r\nUser-Agent: curl/7.64.1\r\nAccept: */*\r\n\r\n");
+    socket.on("data", (data: { toString: () => any; }) => {
+        const req = data.toString()
+        const path = req.split(" ")[1];
+        const res = path === "/" ? "HTTP/1.1 200 OK\r\n\r\n" : "HTTP/1.1 404 NOT_FOUND\r\n\r\n"
+    })
     socket.end();
 });
 
