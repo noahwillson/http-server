@@ -1,11 +1,14 @@
-import { createServer, Socket} from 'net';
+import { createServer, Socket } from 'net';
 import fs from 'fs';
 import zlib from 'zlib';
+
 const CRLF = '\r\n';
+
 enum HttpMethod {
     GET = 'GET',
     POST = 'POST',
 }
+
 enum HttpHeaderType {
     CONTENT_TYPE = 'Content-Type',
     CONTENT_LENGTH = 'Content-Length',
@@ -14,37 +17,46 @@ enum HttpHeaderType {
     ACCEPT_ENCODING = 'Accept-Encoding',
     CONTENT_ENCODING = 'Content-Encoding',
 }
+
 enum EncodingType {
     GZIP = 'gzip',
 }
+
 enum ContentType {
     TEXT_PLAIN = 'text/plain',
     OCTET_STREAM = 'application/octet-stream'
 }
+
 enum HttpStatusCode {
     OK = '200 OK',
     NOT_FOUND = '404 Not Found',
     BAD_REQUEST = '400 Bad Request',
     CREATED = '201 Created'
 }
+
 enum HttpVersion {
     HTTP_1_1 = 'HTTP/1.1',
 }
+
 type HttpHeaders = Map<string, string>;
+
 const parseHeaders = (input: string): HttpHeaders => {
     const headers = new Map<string, string>();
-    input.split(CRLF+CRLF)[0].replace(input[0], '').split(CRLF).slice(1).forEach(line => {
+    input.split(CRLF + CRLF)[0].replace(input[0], '').split(CRLF).slice(1).forEach(line => {
         const [key, value] = line.split(': ');
         headers.set(key, value);
     });
     return headers;
 }
+
 const encodeHeaders = (headers: HttpHeaders): string => {
     return [...headers.entries()].map(([key, value]) => `${key}: ${value}`).join(CRLF);
 }
+
 const createResponse = (httpVersion: HttpVersion, statusCode: HttpStatusCode, headers?: HttpHeaders, body?: string): string => {
     return `${httpVersion} ${statusCode}${headers ? CRLF + encodeHeaders(headers) : ''}${CRLF}${CRLF}${body ?? ''}`;
 }
+
 const server = createServer((socket: Socket) => {
     socket.on('data', (data: Buffer) => {
         const input = data.toString().split(CRLF);
@@ -52,8 +64,8 @@ const server = createServer((socket: Socket) => {
         const [method, path, httpVersion] = request;
         const pathParts = path.split('/');
         const headers = parseHeaders(data.toString());
-        const body = data.toString().split(CRLF+CRLF)[1];
-        console.log({method}, {path}, {httpVersion}, {headers}, {pathParts}, {body});
+        const body = data.toString().split(CRLF + CRLF)[1];
+        console.log({ method }, { path }, { httpVersion }, { headers }, { pathParts }, { body });
         switch (method) {
             case HttpMethod.GET:
                 if (path === '/') {
