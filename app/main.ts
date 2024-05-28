@@ -1,123 +1,118 @@
+import { createServer, Socket} from 'net';
 import fs from 'fs';
-import * as net from 'net';
-enum Status {
-    OK = "200 OK",
-    CREATED = "201 Created",
-    NOT_FOUND = "404 Not Found",
+
+const CRLF = '\r\n';
+enum HttpMethod {
+    GET = 'GET',
+    POST = 'POST',
 }
-interface Response {
-    status: Status,
-    headers?: Record<string, string>,
-    body?: Buffer,
+enum HttpHeaderType {
+    CONTENT_TYPE = 'Content-Type',
+    CONTENT_LENGTH = 'Content-Length',
+    HOST = 'Host',
+    USER_AGENT = 'User-Agent',
+    ACCEPT_ENCODING = 'Accept-Encoding',
+    CONTENT_ENCODING = 'Content-Encoding',
 }
-let directory = "."
-if (process.argv.length == 4) {
-    directory = process.argv[3]
-    console.log({ directory })
+enum EncodingType {
+    GZIP = 'gzip',
 }
-const server = net.createServer(async (socket) => {
-    async function readable(): Promise<{}> {
-        return new Promise((resolve) => socket.on('readable', resolve));
-    }
-    async function readBytes(n: number = 0): Promise<Buffer> {
-        const buffer = socket.read(n);
-        if (buffer) {
-            return new Promise<Buffer>((resolve) => resolve(buffer));
+enum ContentType {
+    TEXT_PLAIN = 'text/plain',
+    OCTET_STREAM = 'application/octet-stream'
+}
+enum HttpStatusCode {
+    OK = '200 OK',
+    NOT_FOUND = '404 Not Found',
+    BAD_REQUEST = '400 Bad Request',
+    CREATED = '201 Created'
+}
+enum HttpVersion {
+    HTTP_1_1 = 'HTTP/1.1',
+}
+type HttpHeaders = Map<string, string>;
+const parseHeaders = (input: string): HttpHeaders => {
+    const headers = new Map<string, string>();
+    input.split(CRLF+CRLF)[0].replace(input[0], '').split(CRLF).slice(1).forEach(line => {
+        const [key, value] = line.split(': ');
+        headers.set(key, value);
+    });
+    return headers;
+}
+const encodeHeaders = (headers: HttpHeaders): string => {
+    return [...headers.entries()].map(([key, value]) => `${key}: ${value}`).join(CRLF);
+}
+const createResponse = (httpVersion: HttpVersion, statusCode: HttpStatusCode, headers?: HttpHeaders, body?: string): string => {
+    return `${httpVersion} ${statusCode}${headers ? CRLF + encodeHeaders(headers) : ''}${CRLF}${CRLF}${body ?? ''}`;
+}
+const server = createServer((socket: Socket) => {
+    socket.on('data', (data: Buffer) => {
+        const input = data.toString().split(CRLF);
+        const request = input[0].split(' ');
+        const [method, path, httpVersion] = request;
+        const pathParts = path.split('/');
+        const headers = parseHeaders(data.toString());
+        const body = data.toString().split(CRLF+CRLF)[1];
+        console.log({method}, {path}, {httpVersion}, {headers}, {pathParts}, {body});
+        switch (method) {
+            case HttpMethod.GET:
+                if (path === '/') {
+                    socket.write(createResponse(HttpVersion.HTTP_1_1, HttpStatusCode.OK));
+                    break;
+                } else if (pathParts.length > 1 && pathParts[1] === 'files') {
+                } else if (pathParts.length > 2 && pathParts[1] === 'echo' && headers.get(HttpHeaderType.ACCEPT_ENCODING) === EncodingType.GZIP) {
+                    const body = pathParts[2];
+                    const responseHeaders = new Map<string, string>();
+                    responseHeaders.set(HttpHeaderType.CONTENT_ENCODING, EncodingType.GZIP);
+                    responseHeaders.set(HttpHeaderType.CONTENT_TYPE, ContentType.TEXT_PLAIN);
+                    responseHeaders.set(HttpHeaderType.CONTENT_LENGTH, body.length.toString());
+                    socket.write(createResponse(HttpVersion.HTTP_1_1, HttpStatusCode.OK, responseHeaders, body));
+                    break;
+                } else if (pathParts.length > 2 && pathParts[1] === 'files') {
+                    const fileName = pathParts[2];
+                    try {
+                        const data = fs.readFileSync(`/tmp/data/codecrafters.io/http-server-tester/${fileName}`, 'utf8');
+                        const responseHeaders = new Map<string, string>();
+                        responseHeaders.set(HttpHeaderType.CONTENT_TYPE, ContentType.OCTET_STREAM);
+                        responseHeaders.set(HttpHeaderType.CONTENT_LENGTH, data.length.toString());
+                        socket.write(createResponse(HttpVersion.HTTP_1_1, HttpStatusCode.OK, responseHeaders, data));
+                    } catch (err) {
+                        socket.write(createResponse(HttpVersion.HTTP_1_1, HttpStatusCode.NOT_FOUND));
+                    }
+                    break;
+                } else if (pathParts.length > 2 && pathParts[2] !== '') {
+                    const responseHeaders = new Map<string, string>();
+                    responseHeaders.set(HttpHeaderType.CONTENT_TYPE, ContentType.TEXT_PLAIN);
+                    responseHeaders.set(HttpHeaderType.CONTENT_LENGTH, pathParts[2].length.toString());
+                    socket.write(createResponse(HttpVersion.HTTP_1_1, HttpStatusCode.OK, responseHeaders, pathParts[2]));
+                    break;
+                } else if (pathParts.length > 1 && pathParts[1] === 'user-agent') {
+                    const value = headers.get(HttpHeaderType.USER_AGENT) || '';
+                    const responseHeaders = new Map<string, string>();
+                    responseHeaders.set(HttpHeaderType.CONTENT_TYPE, ContentType.TEXT_PLAIN);
+                    responseHeaders.set(HttpHeaderType.CONTENT_LENGTH, value.length.toString());
+                    socket.write(createResponse(HttpVersion.HTTP_1_1, HttpStatusCode.OK, responseHeaders, value));
+                    break;
+                } else if (path !== '/') {
+                    socket.write(createResponse(HttpVersion.HTTP_1_1, HttpStatusCode.NOT_FOUND));
+                    break;
+                }
+            case HttpMethod.POST:
+                if (pathParts.length > 2 && pathParts[1] === 'files') {
+                    const fileName = pathParts[2];
+                    fs.writeFileSync(`/tmp/data/codecrafters.io/http-server-tester/${fileName}`, body, 'utf8');
+                    socket.write(createResponse(HttpVersion.HTTP_1_1, HttpStatusCode.CREATED));
+                    break;
+                }
+            default:
+                socket.write(`${httpVersion} ${HttpStatusCode.BAD_REQUEST}${CRLF}${CRLF}`);
+                return;
         }
-        return new Promise<Buffer>(async (resolve) => {
-            await readable()
-            readBytes(n).then(resolve)
-        });
-    }
-    async function readLine() {
-        let character: string
-        let line = ""
-        do {
-            character = String.fromCharCode((await readBytes(1))[0])
-            line += character
-        } while (character != '\n');
-        return line.substring(0, line.length - 2)
-    }
-    const requestLine = await readLine()
-    const [method, path, version] = requestLine.split(" ")
-    const headers = {}
-    let line;
-    while (line = await readLine()) {
-        const [key, value] = line.split(": ")
-        headers[key.toLowerCase()] = value
-    }
-    
-    const isPost = method == "POST"
-    let body: Buffer | null = null
-    if (isPost) {
-        const contentLength = parseInt(headers["Content-Length".toLowerCase()] || 0)
-        body = await readBytes(contentLength)
-    }
-    let response: Response = {
-        status: Status.NOT_FOUND
-    }
-    if (path == "/") {
-        response = {
-            status: Status.OK
-        }
-    } else if (path.startsWith("/echo/")) {
-        const message = path.substring(6)
-        const buffer = Buffer.from(message, "utf-8")
-        response = {
-            status: Status.OK,
-            headers: {
-                "Content-Type": "text/plain",
-                "Content-Length": String(buffer.length),
-            },
-            body: buffer
-        }
-    } else if (path == "/user-agent") {
-        const message = headers["User-Agent".toLowerCase()]
-        const buffer = Buffer.from(message, "utf-8")
-        response = {
-            status: Status.OK,
-            headers: {
-                "Content-Type": "text/plain",
-                "Content-Length": String(buffer.length),
-            },
-            body: buffer
-        }
-    } else if (path.startsWith("/files/")) {
-        const fileName = path.substring(7)
-        const filePath = `${directory}/${fileName}`
-        if (isPost) {
-            fs.writeFileSync(filePath, body!)
-            response = {
-                status: Status.CREATED
-            }
-        } else if (fs.existsSync(filePath)) {
-            const size = fs.statSync(filePath).size
-            const content = fs.readFileSync(filePath)
-            response = {
-                status: Status.OK,
-                headers: {
-                    "Content-Type": "application/octet-stream",
-                    "Content-Length": String(size),
-                },
-                body: content
-            }
-        } else {
-            response = {
-                status: Status.NOT_FOUND
-            }
-        }
-    }
-    socket.write(`HTTP/1.1 ${response.status}\r\n`);
-    for (const [key, value] of Object.entries(response.headers || {})) {
-        socket.write(`${key}: ${value}\r\n`);
-    }
-    socket.write(`\r\n`);
-    if (response.body) {
-        socket.write(response.body);
-    }
-    socket.end();
+    })
 });
-console.log("codecrafters build-your-own-http");
+// You can use print statements as follows for debugging, they'll be visible when running tests.
+console.log("Logs from your program will appear here!");
+// Uncomment this to pass the first stage
 server.listen(4221, 'localhost', () => {
-    console.log('server is running on port 4221');
+    console.log('Server is running on port 4221');
 });
