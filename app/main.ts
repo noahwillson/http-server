@@ -71,8 +71,6 @@ const server = createServer((socket: Socket) => {
                         return true;
                     });
                     responseHeaders.set(HttpHeaderType.CONTENT_TYPE, ContentType.TEXT_PLAIN);
-                    responseHeaders.set(HttpHeaderType.CONTENT_LENGTH, body.length.toString());
-                    socket.write(createResponse(HttpVersion.HTTP_1_1, HttpStatusCode.OK, responseHeaders, body));
                     if (responseHeaders.get(HttpHeaderType.CONTENT_ENCODING) === EncodingType.GZIP) {
                         const encodedBody = zlib.gzipSync(Buffer.from(body, 'utf-8'));
                         responseHeaders.set(HttpHeaderType.CONTENT_LENGTH, encodedBody.length.toString());
