@@ -1,58 +1,37 @@
 import * as net from 'net';
-import * as fs from 'fs';
 
-const server = net.createServer((socket) => {
+const server = net.createServer((socket: { write: (arg0: string) => void; on: (arg0: string, arg1: (data: any) => void) => void; end: () => void; }) => {
     console.log('New connection established');
 
-    socket.on("data", (data) => {
-        const req = data.toString();
+    socket.on("data", (data: { toString: () => any; }) => {
+        const req = data.toString()
         const [requestLine, ...headerLines] = req.split("\r\n");
         const path = requestLine.split(" ")[1];
-        const headers = headerLines.reduce((acc, line) => {
-            const [key, value] = line.split(": ");
-            if (key && value) {
-                acc[key] = value;
+        const headers = headerLines.reduce((acc: { [x: string]: any; }, line: { split: (arg0: string) => [any, any]; }) => {
+            const [key,value] = line.split(": ")
+            if(key && value) {
+                acc[key] = value
             }
             return acc;
-        }, {} as Record<string, string>);
+        },{} as Record<string,string>)
 
         let res;
-        if (path === "/") {
-            res = `HTTP/1.1 200 OK\r\n\r\n`;
-            socket.write(res);
-            socket.end();
-        } else if (path.startsWith("/echo/")) {
+        if(path === "/"){
+            const body = "Welcome to root"
+            res = `HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ${body.length}\r\n\r\n${body}`;
+        }else if(path.startsWith("/echo/")){
             const echoStr = path.slice(6);
-            res = `HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ${echoStr.length}\r\n\r\n${echoStr}`;
-            socket.write(res);
-            socket.end();
-        } else if (path === "/user-agent") {
+            res = `HTTP/1.1 200 OK\r\n\Content-Type: text/plain\r\nContent-length: ${echoStr.length}\r\n\r\n${echoStr}`;
+        }else if (path === "/user-agent") {
             const userAgent = headers["User-Agent"] || "Unknown";
             res = `HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ${userAgent.length}\r\n\r\n${userAgent}`;
-            socket.write(res);
-            socket.end();
-        } else if (path.startsWith("/files/")) {
-            const filePath = path.slice(7); // Extract the file path after "/files/"
-            const fullPath = `/tmp/data/codecrafters.io/http-server-tester/${filePath}`;
-
-            fs.readFile(fullPath, 'utf8', (err, data) => {
-                if (err) {
-                    res = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\n";
-                    socket.write(res);
-                    socket.end();
-                } else {
-                    res = `HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ${data.length}\r\n\r\n${data}`;
-                    socket.write(res);
-                    socket.end();
-                }
-            });
-        } else {
-            res = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\n";
-            socket.write(res);
-            socket.end();
         }
-    });
-
+        else {
+            res = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\n"
+        }
+        socket.write(res);
+        socket.end();
+    })
     socket.on('end', () => {
         console.log('Connection closed');
     });
