@@ -1,6 +1,5 @@
 import * as net from 'net';
 import * as fs from 'fs';
-import * as path from 'path';  // Ensure path module is imported correctly
 
 const server = net.createServer((socket) => {
     console.log('New connection established');
@@ -19,8 +18,7 @@ const server = net.createServer((socket) => {
 
         let res;
         if (path === "/") {
-            const body = "Welcome to root";
-            res = `HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ${body.length}\r\n\r\n${body}`;
+            res = `HTTP/1.1 200 OK\r\n\r\n`;
             socket.write(res);
             socket.end();
         } else if (path.startsWith("/echo/")) {
@@ -34,8 +32,8 @@ const server = net.createServer((socket) => {
             socket.write(res);
             socket.end();
         } else if (path.startsWith("/files/")) {
-            const filePath = path.split("/")
-            const fullPath = filePath.slice(1).join('/tmp/data/codecrafters.io/http-server-tester');
+            const filePath = path.slice(7); // Extract the file path after "/files/"
+            const fullPath = `/tmp/data/codecrafters.io/http-server-tester/${filePath}`;
 
             fs.readFile(fullPath, 'utf8', (err, data) => {
                 if (err) {
