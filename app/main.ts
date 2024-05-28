@@ -1,8 +1,6 @@
 import * as net from 'net';
 
 const server = net.createServer((socket: { write: (arg0: string) => void; on: (arg0: string, arg1: (data: any) => void) => void; end: () => void; }) => {
-    socket.write("HTTP/1.1 200 OK\r\n\r\n");
-    socket.end();
     socket.on("data", (data: { toString: () => any; }) => {
         const req = data.toString()
         const path = req.split(" ")[1];
