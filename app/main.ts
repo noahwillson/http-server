@@ -1,5 +1,6 @@
 import * as net from 'net';
 import * as fs from 'fs';
+import { join } from 'path'; // Import the join method explicitly
 
 const server = net.createServer((socket) => {
     console.log('New connection established');
@@ -8,46 +9,39 @@ const server = net.createServer((socket) => {
         const req = data.toString();
         const [requestLine, ...headerLines] = req.split("\r\n");
         const path = requestLine.split(" ")[1];
-        const headers = headerLines.reduce((acc, line) => {
-            const [key, value] = line.split(": ");
-            if (key && value) {
-                acc[key] = value;
-            }
-            return acc;
-        }, {} as Record<string, string>);
 
-        let res;
-        if (path === "/") {
-            res = `HTTP/1.1 200 OK\r\n\r\n`;
-            socket.write(res);
-            socket.end();
-        } else if (path.startsWith("/echo/")) {
-            const echoStr = path.slice(6);
-            res = `HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ${echoStr.length}\r\n\r\n${echoStr}`;
-            socket.write(res);
-            socket.end();
-        } else if (path === "/user-agent") {
-            const userAgent = headers["User-Agent"] || "Unknown";
-            res = `HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ${userAgent.length}\r\n\r\n${userAgent}`;
-            socket.write(res);
-            socket.end();
-        } else if (path.startsWith("/files/")) {
+        if (path.startsWith("/files/")) {
             const filePath = path.slice(7); // Extract the file path after "/files/"
-            const fullPath = `/tmp/data/codecrafters.io/http-server-tester/${filePath}`;
+            const directory = process.argv.slice(2).find(arg => arg.startsWith('--directory='));
 
-            fs.readFile(fullPath, 'utf8', (err, data) => {
+            if (!directory) {
+                console.error('No directory specified.');
+                const res = "HTTP/1.1 500 Internal Server Error\r\nContent-Type: text/plain\r\n\r\nNo directory specified.";
+                socket.write(res);
+                socket.end();
+                return;
+            }
+
+            const directoryPath = directory.split('=')[1];
+            const fullPath = join(directoryPath, filePath); // Using the join method from path module
+
+            fs.readFile(fullPath, (err, data) => {
                 if (err) {
-                    res = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\n";
+                    console.error(`Error reading file ${filePath}:`, err);
+                    const res = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nFile not found.";
                     socket.write(res);
                     socket.end();
                 } else {
-                    res = `HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: ${data.length}\r\n\r\n${data}`;
+                    const contentType = 'application/octet-stream';
+                    const contentLength = data.length;
+                    const headers = `HTTP/1.1 200 OK\r\nContent-Type: ${contentType}\r\nContent-Length: ${contentLength}\r\n\r\n`;
+                    const res = Buffer.concat([Buffer.from(headers), data]);
                     socket.write(res);
                     socket.end();
                 }
             });
         } else {
-            res = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\n";
+            const res = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nInvalid request.";
             socket.write(res);
             socket.end();
         }
