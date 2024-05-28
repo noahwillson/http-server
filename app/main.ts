@@ -12,18 +12,16 @@ const server = net.createServer((socket) => {
 
         if (path.startsWith("/files/")) {
             const filePath = path.slice(7); // Extract the file path after "/files/"
-            const directoryIndex = process.argv.findIndex(arg => arg.startsWith('--directory='));
-
-            if (directoryIndex === -1) {
+            const directoryArg = process.argv.find(arg => arg.startsWith('--directory='));
+            if (!directoryArg) {
                 console.error('No directory specified.');
                 const res = "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\nNo directory specified.";
                 socket.write(res);
                 socket.end();
                 return;
             }
-
-            const directoryPath = process.argv[directoryIndex].split('=')[1];
-            const fullPath = join(directoryPath, filePath); // Using the join method from path module
+            const directoryPath = directoryArg.split('=')[1];
+            const fullPath = join(directoryPath, filePath);
 
             fs.readFile(fullPath, (err, data) => {
                 if (err) {
