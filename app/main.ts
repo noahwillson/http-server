@@ -14,14 +14,6 @@ const server = net.createServer((socket) => {
             const filePath = path.slice(7); // Extract the file path after "/files/"
             const directoryIndex = process.argv.findIndex(arg => arg.startsWith('--directory='));
 
-            if (directoryIndex === -1) {
-                console.error('No directory specified.');
-                const res = "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\n\r\nNo directory specified.";
-                socket.write(res);
-                socket.end();
-                return;
-            }
-
             const directoryPath = process.argv[directoryIndex].split('=')[1];
             const fullPath = join(directoryPath, filePath); // Using the join method from path module
 
