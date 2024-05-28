@@ -59,7 +59,6 @@ const server = createServer((socket: Socket) => {
                 if (path === '/') {
                     socket.write(createResponse(HttpVersion.HTTP_1_1, HttpStatusCode.OK));
                     break;
-                } else if (pathParts.length > 1 && pathParts[1] === 'files') {
                 } else if (pathParts.length > 2 && pathParts[1] === 'echo' && headers.get(HttpHeaderType.ACCEPT_ENCODING) === EncodingType.GZIP) {
                     const body = pathParts[2];
                     const responseHeaders = new Map<string, string>();
