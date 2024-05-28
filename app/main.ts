@@ -9,7 +9,7 @@ const server = net.createServer((socket: { write: (arg0: string) => void; on: (a
             const echoStr = path.slice(6);
             res = `HTTP/1.1 200 OK\r\n\Content-Type: text/plain\r\nContent-length: ${echoStr.length}\r\n\r\n${echoStr}`;
         }else {
-            res = "HTTP/1.1 404 Not Found\r\n\r\n"
+            res = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\n"
         }
         socket.write(res);
         socket.end();
