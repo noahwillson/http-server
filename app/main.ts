@@ -41,7 +41,7 @@ const server = net.createServer((socket) => {
                     socket.write(res);
                     socket.end();
                 } else {
-                    res = `HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ${data.length}\r\n\r\n${data}`;
+                    res = `HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: ${data.length}\r\n\r\n${data}`;
                     socket.write(res);
                     socket.end();
                 }
